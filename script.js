@@ -1,18 +1,70 @@
-/* DOM elements */
+// Find the chat elements on the page.
 const chatForm = document.getElementById("chatForm");
 const userInput = document.getElementById("userInput");
 const chatWindow = document.getElementById("chatWindow");
+const sendButton = document.getElementById("sendBtn");
 
-// Set initial message
-chatWindow.textContent = "👋 Hello! How can I help you today?";
+// Replace this example with your class Cloudflare Worker URL.
+const workerUrl = "https://loreal-chatbot.your-subdomain.workers.dev/";
 
-/* Handle form submit */
-chatForm.addEventListener("submit", (e) => {
-  e.preventDefault();
+// Keep the conversation so the assistant can use earlier messages as context.
+const messages = [
+  {
+    role: "system",
+    content:
+      "You are a helpful L’Oréal beauty assistant. Only answer questions about L’Oréal products, skincare, makeup, haircare, fragrances, beauty routines, and product recommendations. If a question is unrelated, politely say you can only help with L’Oréal products and beauty advice, then invite the user to ask about those topics. Do not invent product details; ask a clarifying question when needed.",
+  },
+];
 
-  // When using Cloudflare, you'll need to POST a `messages` array in the body,
-  // and handle the response using: data.choices[0].message.content
+// Add a message to the chat without treating its text as HTML.
+function showMessage(role, text) {
+  const messageElement = document.createElement("div");
+  messageElement.classList.add("msg", role === "user" ? "user" : "ai");
+  messageElement.textContent = text;
+  chatWindow.appendChild(messageElement);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
 
-  // Show message
-  chatWindow.innerHTML = "Connect to the OpenAI API for a response!";
+// Show a welcome message when the page loads.
+showMessage("assistant", "Hello! Ask me about L’Oréal products or beauty routines.");
+
+// Send each submitted message to the Cloudflare Worker.
+chatForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const text = userInput.value.trim();
+  if (!text) {
+    return;
+  }
+
+  showMessage("user", text);
+  messages.push({ role: "user", content: text });
+  userInput.value = "";
+  sendButton.disabled = true;
+
+  try {
+    const response = await fetch(workerUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || "The request could not be completed.");
+    }
+
+    const reply = data.choices?.[0]?.message?.content;
+    if (typeof reply !== "string" || !reply.trim()) {
+      throw new Error("The assistant returned an empty response.");
+    }
+
+    messages.push({ role: "assistant", content: reply });
+    showMessage("assistant", reply);
+  } catch (error) {
+    showMessage("assistant", `Sorry, I couldn't get a response. ${error.message}`);
+  } finally {
+    sendButton.disabled = false;
+    userInput.focus();
+  }
 });
