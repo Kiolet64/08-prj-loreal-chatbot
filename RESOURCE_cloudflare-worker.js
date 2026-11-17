@@ -15,11 +15,18 @@ export default {
     }
 
     const apiKey = env.OPENAI_API_KEY; // Make sure to name your secret OPENAI_API_KEY in the Cloudflare Workers dashboard
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: 'The OPENAI_API_KEY secret is not configured.' }), {
+        status: 500,
+        headers: corsHeaders
+      });
+    }
+
     const apiUrl = 'https://api.openai.com/v1/chat/completions';
     const userInput = await request.json();
 
     const requestBody = {
-      model: 'gpt-4o',
+      model: 'gpt-4.1',
       messages: userInput.messages,
       max_completion_tokens: 300,
     };

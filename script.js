@@ -4,8 +4,8 @@ const userInput = document.getElementById("userInput");
 const chatWindow = document.getElementById("chatWindow");
 const sendButton = document.getElementById("sendBtn");
 
-// Replace this example with your class Cloudflare Worker URL.
-const workerUrl = "https://loreal-chatbot.your-subdomain.workers.dev/";
+// Send chat requests to the project Cloudflare Worker.
+const workerUrl = "https://08-prj-loreal-chatbot.jasminv206.workers.dev/";
 
 // Keep the conversation so the assistant can use earlier messages as context.
 const messages = [
